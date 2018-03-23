@@ -1,1 +1,1 @@
-# LatticePolytpes
+# LatticePolytopes
