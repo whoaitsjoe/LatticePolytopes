@@ -150,28 +150,20 @@ namespace UpdatedRP
             return new List<char>(coordinates.ToCharArray()).ConvertAll(c => Convert.ToInt32(c.ToString())).ToArray();
         }
 
+        public string getLexicographicalString()
+        {
+            char[] c = coordinates.ToCharArray();
+
+            Array.Sort(c);
+
+            return new string(c);
+        }
+
         //todo -- change data type to long or double to accomodate larger d/k values.
         public int getIntRepresentation()
         {
             return Convert.ToInt32(coordinates);
         }
-
-		//UNUSED
-		//todo -- first digit in u can be 0, how to account for it?
-		private static int incrementPointHelper(int x, bool symmetryCheck)
-		{
-			int temp = x % 10;  //todo -- generalize for k > 9
-			int result;
-
-			//last digit of x is not at bound yet
-			if (temp < ((symmetryCheck) ? (Globals.k / 2) : (Globals.k)))
-				result = x + 1;
-			else
-				//divide temp by 10, recurse, then add 0 as last digit.
-				result = (x > 9) ? (incrementPointHelper(x / 10, symmetryCheck) * 10) : (-1);
-
-			return result;
-		}
 
         public static string convertIntArrayToString(int[] arr)
         {

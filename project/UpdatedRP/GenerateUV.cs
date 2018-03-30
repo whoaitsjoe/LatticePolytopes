@@ -111,12 +111,18 @@ namespace UpdatedRP
                     if (Globals.messageOn)
                         Console.WriteLine(new_v.ToString() + ": Eliminated. Same point as u.");
                 }
-                //inverse check
+                //inverse check for (k - u)
                 else if (checkInverse(u, new_v))
                 {
                     if(Globals.messageOn)
-						Console.WriteLine(new_v.ToString() + ": Eliminated. Inverse already checked.");
+                        Console.WriteLine(new_v.ToString() + ": Eliminated. Inverse already checked (k - u).");
                 }
+				//inverse check for v in lexicographical order
+				else if (checkLexicographical(u, new_v))
+				{
+					if (Globals.messageOn)
+                        Console.WriteLine(new_v.ToString() + ": Eliminated. Inverse already checked (lexico v).");
+				}
 				else
 				{
                     //generate gi 
@@ -175,7 +181,7 @@ namespace UpdatedRP
             return v <= Math.Min(Globals.k, Globals.k - u + Globals.gap);
         }
 
-        //returns true if inverse has NOT been checked (i.e. u,v is a valid pair).
+        //returns true if inverse has been checked (i.e. u,v is not a valid pair).
         private static bool checkInverse(Point u, Point v)
         {
             int[] vCoords = v.getIntArray();
@@ -188,20 +194,35 @@ namespace UpdatedRP
             }
 
             //checks to see if v inverse ordered lexicographically is smaller than u
-            string temp = "";
+            string vInverseString = "";
             int[] tempVal = new int[Globals.d];
+
             for (int i = 0; i < Globals.d; i++)
             {
                 tempVal[i] = Globals.k - vCoords[i];
             }
+
             Array.Sort(tempVal);
+
 			for (int i = 0; i < Globals.d; i++)
 			{
-                temp+= tempVal[i].ToString();
+                vInverseString += tempVal[i].ToString();
 			}
-            if (Convert.ToInt16(temp) >= u.getIntRepresentation())
+
+            if (Convert.ToInt16(vInverseString) >= u.getIntRepresentation())
                 return false;
 
+            return true;
+        }
+
+		//returns true if inverse has been checked (i.e. u,v is not a valid pair).
+		private static bool checkLexicographical(Point u, Point v)
+        {
+            string vString = v.getLexicographicalString();
+
+            if (Convert.ToInt16(vString) >= u.getIntRepresentation())
+                return false;
+            
             return true;
         }
 

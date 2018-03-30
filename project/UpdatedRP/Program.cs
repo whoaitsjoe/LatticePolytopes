@@ -28,9 +28,9 @@ namespace UpdatedRP
 			var elapsedMs = watch.ElapsedMilliseconds;
             Console.WriteLine("Total elapsed time: " + elapsedMs);*/
 
-            Tester.testGenUV();
+            //Tester.testGenUV();
             //Tester.testInverse();
-			//shelling();
+			shelling();
         }
 
 		public static void shelling()
