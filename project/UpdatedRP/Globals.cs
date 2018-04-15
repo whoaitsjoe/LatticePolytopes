@@ -31,6 +31,9 @@ namespace UpdatedRP
         //bool to save results
         public static bool writeToFile = false;
 
+        //temp variable to hold 222 polytopes
+        public static Dictionary<string, List<Graph>> _222polytopes;
+
         public static void initialize()
         {
             vertexSet = new Dictionary<string, List<Point>>();
@@ -38,5 +41,11 @@ namespace UpdatedRP
             coreSet = new Dictionary<string, List<Point>>();
             fixedVertices = new List<Point>();
         }
+
+
+        //testing variables
+        public static int CDD_convexHullAdjList_counter;
+        public static int recursionDepth;
+        public static int generateRecursion;
     }
 }

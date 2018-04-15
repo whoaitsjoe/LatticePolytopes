@@ -106,6 +106,27 @@ namespace UpdatedRP
 			return result;
 		}
 
+        //
+		public static void writeGraphToFile(string fName, List<Graph> graphs)
+		{
+            List<String> lines = new List<string>();
+
+            lines.Add("begin");
+
+            for (int i = 0; i < graphs.Count; i++)
+            {
+                lines.Add("Facet #" + (i+1));
+
+                foreach (Point p in graphs[i].Points)
+                    lines.Add(p.ToString());
+                
+                lines.Add("--");
+                //add adjList
+            }
+
+            lines.Add("end");
+		}
+
         //reads points from file
         //File has one point per line (e.g. 001).
 		public static List<Point> readPointsFromFile(string fName)

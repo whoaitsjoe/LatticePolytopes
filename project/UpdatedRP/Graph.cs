@@ -234,5 +234,10 @@ namespace UpdatedRP
 
             adjList = newAL;
 		}
+
+        public bool contains(Point p)
+        {
+            return points.Contains(p);
+        }
     }
 }

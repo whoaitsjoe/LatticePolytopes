@@ -7,19 +7,62 @@ namespace UpdatedRP
 	{
         public static int totalCount = 0;
 
+		public static List<Graph> _dMinus1Polytopes(List<Point> vertices, int gap)
+		{
+			bool found;
+			List<Graph> result = new List<Graph>();
+
+            if (vertices.Count == 0)
+                return dMinus1Polytopes(vertices, gap);
+            
+            List<Graph> validGraphs = Globals._222polytopes[vertices[0].ToString()];
+
+			foreach (Graph g in validGraphs)
+			{
+				if ((gap == 0 && g.getPointsCount() < 6) || (gap == 1 && g.getPointsCount() < 4))
+					continue;
+
+				found = true;
+				foreach (Point p in vertices)
+				{
+					if (!g.contains(p))
+					{
+						found = false;
+						break;
+					}
+				}
+
+				if (found)
+					result.Add(g);
+			}
+
+			return result;
+		}
+
 		public static List<Graph> dMinus1Polytopes(List<Point> vertices, int gap)
 		{
             string index = Convert.ToInt32(Globals.d - 1).ToString() + Convert.ToInt32(Globals.k).ToString() + gap.ToString();
             List<Point> nonVertices = (Globals.nonvertexSet.ContainsKey(index)) ? Globals.nonvertexSet[index] : new List<Point>();
             List<Point> corePoints = (Globals.coreSet.ContainsKey(index)) ? Globals.coreSet[index] : new List<Point>();
 
-			return dMinus1PolytopesHelper(vertices, nonVertices, corePoints, 0, -1, gap);
+            //todo -- temp, remove
+            List<Graph> temp = dMinus1PolytopesHelper(vertices, nonVertices, corePoints, 0, -1, gap);
+            return temp;
+		}
+
+		public static void dMinus1PolytopesToFile(List<Point> vertices, int gap)
+		{
+			string index = Convert.ToInt32(Globals.d - 1).ToString() + Convert.ToInt32(Globals.k).ToString() + gap.ToString();
+			List<Point> nonVertices = (Globals.nonvertexSet.ContainsKey(index)) ? Globals.nonvertexSet[index] : new List<Point>();
+			List<Point> corePoints = (Globals.coreSet.ContainsKey(index)) ? Globals.coreSet[index] : new List<Point>();
+
+            //dMinus1PolytopesHelper(vertices, nonVertices, corePoints, 0, -1, gap);
 		}
 
         //todo -- generalize this function to any d, currently using iVal and jVal.
 		//This function currently generates just delta(d-1,k) - gap polytopes, should also generate delta(d-1,k) polytopes
 		public static List<Graph> dMinus1PolytopesHelper(List<Point> vertices, List<Point> nonVertices, List<Point> corePoints, int iVal, int jVal, int gap)
-		{
+		{         
 			List<Graph> result = new List<Graph>();
 			List<Point> currVertices = new List<Point>();
 			List<Point> currNonVertices = new List<Point>();
@@ -28,7 +71,8 @@ namespace UpdatedRP
 			if (vertices.Count > (Globals.maxDiameter[Globals.k] * 2 + 1))
 				return result;
 
-			if (vertices.Count == (Globals.maxDiameter[Globals.k] * 2 + 1) || vertices.Count == (Globals.maxDiameter[Globals.k] * 2))
+            //commented out to remove duplicates
+			/*if (vertices.Count == (Globals.maxDiameter[Globals.k] * 2 + 1) || vertices.Count == (Globals.maxDiameter[Globals.k] * 2))
 			{
 				Graph tempGraph;
 				if (CDD.convexHullAdjList(vertices, new List<Point>(), out tempGraph))
@@ -36,7 +80,7 @@ namespace UpdatedRP
 					totalCount++;
 					result.Add(tempGraph.clone());
 				}
-			}
+			}*/
 
 			foreach (Point p in vertices)
 				currVertices.Add(p.clone());
@@ -105,7 +149,7 @@ namespace UpdatedRP
 							if (currVertices.Count >= (Globals.maxDiameter[Globals.k] - gap) * 2)
 							{
 								totalCount++;
-								result.Add(facet.clone());
+							    result.Add(facet.clone());
 								result.AddRange(dMinus1PolytopesHelper(currVertices, currNonVertices, corePoints, i, j, gap));
 							}
 							else
@@ -117,6 +161,7 @@ namespace UpdatedRP
 					currNonVertices.Add(tempVertex.clone());
 				}
 			}
+
 			return result;
 		}
 

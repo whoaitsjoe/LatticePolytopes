@@ -63,10 +63,93 @@ namespace UpdatedRP
 			List<string> adjList = new List<string>();
 			Dictionary<int, List<int>> adjList2 = new Dictionary<int, List<int>>();
 
-			string outFile = "/Users/Joe/Code/research/Files/out.ext";
+            string outFile = "/Users/Joe/Code/research/Files/out.ext";
 
 			Parse.writeToFile(points, outFile);
 
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = "/Users/Joe/Code/research/cdd/src/_minimalRepresentation";
+            startInfo.CreateNoWindow = true;
+            startInfo.Arguments = outFile;
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+            startInfo.CreateNoWindow = true;
+
+            try
+            {
+                using (Process proc = Process.Start(startInfo))
+				{
+					while (!proc.StandardOutput.EndOfStream)
+					{
+						string line = proc.StandardOutput.ReadLine();
+
+						if (line == "begin")
+						{
+							flag = true;
+							continue;
+						}
+
+						//checks to see if point is u or v and sets corresponding flag to true
+						if (flag)
+						{
+							char[] delimiter = new char[] { ' ' };
+							string[] tokens = line.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+
+							for (int i = 1; i < tokens.Length; i++)
+							{
+								if (!uFound)
+								{
+									try
+									{
+										if (tokens[i] != u.Coordinates[i - 1].ToString())
+											break;
+									}
+									catch (FormatException)
+									{
+
+									}
+								}
+								else
+									break;
+
+								if (i == tokens.Length - 1)
+									uFound = true;
+							}
+
+							for (int i = 1; i < tokens.Length; i++)
+							{
+								if (!vFound)
+								{
+									try
+									{
+										if (tokens[i] != v.Coordinates[i - 1].ToString())
+											break;
+									}
+									catch (FormatException)
+									{
+
+									}
+								}
+								else
+									break;
+
+								if (i == tokens.Length - 1)
+									vFound = true;
+							}
+						}
+                    }
+
+                    proc.WaitForExit();
+                }
+
+            }
+            catch (Exception ee)
+            {
+                Console.WriteLine("Error with _minimalRepresentation in CDD.convexHullVertex. \n" + ee.Message);
+            }
+
+            /*
 			var proc = new Process
 			{
 				StartInfo = new ProcessStartInfo
@@ -79,7 +162,6 @@ namespace UpdatedRP
 					CreateNoWindow = true
 				}
 			};
-
 			proc.Start();
 			while (!proc.StandardOutput.EndOfStream)
 			{
@@ -103,7 +185,7 @@ namespace UpdatedRP
 						{
 							try
 							{
-                                if (tokens[i] != u.Coordinates[i - 1].ToString())
+								if (tokens[i] != u.Coordinates[i - 1].ToString())
 									break;
 							}
 							catch (FormatException)
@@ -141,10 +223,12 @@ namespace UpdatedRP
 				}
 			}
 
-			uRedundant = !uFound;
-			vRedundant = !vFound;
 
 			proc.WaitForExit();
+			*/
+
+			uRedundant = !uFound;
+			vRedundant = !vFound;
 			return (uFound && vFound);
 		}
 
@@ -340,6 +424,7 @@ namespace UpdatedRP
 		public static bool convexHullAdjList(List<Point> points, List<Point> corePoints, out Graph result)
 		{
 			Globals.convexHullCount++;
+			Globals.CDD_convexHullAdjList_counter++;
 
 			bool minRepFlag = false, adjFlag = false, active = false;
 			int count = points.Count;
@@ -352,6 +437,7 @@ namespace UpdatedRP
 			List<Point> _pointList = new List<Point>();
 			Dictionary<string, List<string>> adjList = new Dictionary<string, List<string>>();
 			List<string> neighbours;
+			var watch = System.Diagnostics.Stopwatch.StartNew();
 
 			for (int i = 0; i < count; i++)
 				found[i] = false;
@@ -361,11 +447,125 @@ namespace UpdatedRP
 			foreach (Point p in corePoints)
 				temp.Add(p.clone());
 
-			string outFile = "/Users/Joe/Code/research/Files/out.ext";
+            string outFile = "/Users/Joe/Code/research/Files/out.ext";
 
 			Parse.writeToFile(temp, outFile);
 
-			var proc = new Process
+			ProcessStartInfo startInfo = new ProcessStartInfo();
+			//startInfo.FileName = "/Users/Joe/Code/research/cdd/src/_minimalRepresentation";
+            startInfo.FileName = "/Users/Joe/Code/research/cdd/src/_minRepAdjList";
+			startInfo.CreateNoWindow = true;
+			startInfo.Arguments = outFile;
+			startInfo.UseShellExecute = false;
+			startInfo.RedirectStandardOutput = true;
+			startInfo.RedirectStandardError = true;
+			startInfo.CreateNoWindow = true;
+
+            try
+            {
+                using (Process proc = Process.Start(startInfo))
+                {
+					while (!proc.StandardOutput.EndOfStream)
+					{
+						string line = proc.StandardOutput.ReadLine();
+
+						if (line == "begin")
+						{
+							active = true;
+							if (!minRepFlag)
+								minRepFlag = true;
+							else
+							{
+								minRepFlag = false;
+								adjFlag = true;
+							}
+
+							continue;
+						}
+						else if (line == "end")
+							active = false;
+
+						if (active && minRepFlag)
+						{
+							tokens = line.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+							num++;
+
+							//checks to see if last token is parseable
+							if (!int.TryParse(tokens[tokens.Length - 1], out int tempVar))
+								continue;
+
+							for (int j = 0; j < count; j++)
+							{
+								if (!found[j])
+								{
+									try
+									{
+										found[j] = true;
+										for (int i = 1; i < tokens.Length; i++)
+										{
+											if (Convert.ToInt16(tokens[i]) != (int)char.GetNumericValue(points[j].Coordinates[i - 1]))
+											{
+												found[j] = false;
+												break;
+											}
+										}
+										if (found[j])
+										{
+											_pointList.Add(points[j].clone());
+											break;
+										}
+									}
+									catch (FormatException)
+									{
+										found[j] = false;
+										break;
+									}
+								}
+							}
+						}
+						else if (!active && minRepFlag)
+						{
+							foreach (bool x in found)
+								if (!x)
+									return false;
+						}
+						else if (active && adjFlag)
+						{
+							tokens = line.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+							neighbours = new List<string>();
+
+							if (tokens.Length < 4)
+								continue;
+							try
+							{
+								//i = 3 hard code is correct. First 3 tokens are as follows: point referenced, # of neighbours, ":"
+								for (int i = 3; i < Convert.ToInt16(tokens[1]) + 3; i++)
+								{
+									neighbours.Add(_pointList[Convert.ToInt16(tokens[i]) - 1].ToString());
+								}
+								adjList.Add(_pointList[Convert.ToInt16(tokens[0]) - 1].ToString(), neighbours);
+
+							}
+							catch (Exception) { }
+						}
+					}
+
+					watch.Stop();
+					Globals.chTime += watch.ElapsedMilliseconds;
+                }
+            }
+            catch(Exception ee)
+            {
+                Console.WriteLine("Error with _minimalRepresentation in CDD.convexHullAdjList. \n" + ee.Message);
+            }
+
+			result.Points = _pointList;
+			result.AdjList = adjList;
+			return true;
+
+
+			/*
+            var proc = new Process
 			{
 				StartInfo = new ProcessStartInfo
 				{
@@ -471,7 +671,7 @@ namespace UpdatedRP
 
 			result.Points = _pointList;
 			result.AdjList = adjList;
-			return true;
+			return true;*/
 		}
 	}
 }

@@ -30,7 +30,9 @@ namespace UpdatedRP
 
             //Tester.testGenUV();
             //Tester.testInverse();
-			shelling();
+            //Tester.testGeneratePolytopes();
+            //shelling();
+            shelling(new Point("000"), new Point("122"));
         }
 
 		public static void shelling()
@@ -56,12 +58,21 @@ namespace UpdatedRP
 			foreach (Tuple<Point, Point> item in allPoints)
 			{
 				Globals.convexHullCount = 0;
+
+                //test - debug
+                Globals.CDD_convexHullAdjList_counter = 0;
+                if (sumUpToK(item.Item1, item.Item2))
+                    continue;
+
 				Console.WriteLine("Start Point: " + item.Item1 + ". End Point: " + item.Item2);
 				Globals.u = item.Item1;
 				Globals.v = item.Item2;
 
 				tempResult = Shell.shell(item.Item1, item.Item2);
 				allShelling.AddRange(tempResult);
+
+				//test - debug
+				Console.WriteLine("convexHullAdjList counter: " + Globals.CDD_convexHullAdjList_counter);
 
 				Parse.writeToFile(tempResult, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
 								  + Globals.gap.ToString() + "/_" + item.Item1.Coordinates[0] + item.Item1.Coordinates[1]
@@ -206,6 +217,17 @@ namespace UpdatedRP
 			Globals.vertexSet = initializeVertexSet();
             Globals.nonvertexSet = initializeNonVertexSet();
 			Globals.coreSet = initializeCoreSet();
+            Globals._222polytopes = new Dictionary<string, List<Graph>>();
+
+            //todo -- temp method of generating all 222 polytopes
+            for (int i = 0; i < 9; i++)
+            {
+                Point p = new Point(new int[2]{i%3, i/3});
+                List<Graph> polytopes = Generate.dMinus1Polytopes(new List<Point>() { p }, 2);
+                Globals._222polytopes.Add(p.ToString(), polytopes);
+            }
+
+            Console.WriteLine();
         }
 
         public static Dictionary<string, List<Point>> initializeVertexSet()
@@ -279,5 +301,15 @@ namespace UpdatedRP
 
 			return result;
 		}
+
+        public static bool sumUpToK(Point u, Point v)
+        {
+            for (int i = 0; i < Globals.d; i++)
+            {
+                if (u.Coordinates[i] + v.Coordinates[i] != Globals.k)
+                    return false;
+            }
+            return true;
+        }
 	}
 }

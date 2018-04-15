@@ -14,6 +14,9 @@ namespace UpdatedRP
 		//***********************
 		public static List<Graph> shell(Point u, Point v, List<Point> vertices = null)
 		{
+            //todo -- remove, test
+            Globals.recursionDepth = 0;
+
 			bool[] facetsUsed = new bool[Globals.d * 2];    //bool array to track which facets have been included. Order is x0 = 0, x0 = k, x1 = 0, etc.
 			int[] facetDiameter = new int[Globals.d * 2];   //int array tracking upper bound of diameter of each facet
 			Graph subSkeleton = new Graph();
@@ -49,7 +52,10 @@ namespace UpdatedRP
 		}
 
         private static List<Graph> shellHelper(Graph currFacets, List<Point> vertexSet, List<Point> nonVertexSet, List<Point> coreSet, bool[] facetsUsed, Point u, Point v, int[] facetDiameter)
-        {
+		{
+            if (Globals.messageOn)
+                Console.WriteLine("Number of added facets in shelling: " + facetsUsed.Where(c => c).Count());
+            
 			List<Graph> result = new List<Graph>();
 			int sp;
 			bool uRedundant, vRedundant;    //track if either u or v is redundant. For message output.
@@ -78,6 +84,9 @@ namespace UpdatedRP
 			List<Point> facetPoints = currFacets.getAllContainedPoints(nextFacet);
 			List<Point> dMinus1FacetPoints = new List<Point>();
 
+			if (Globals.messageOn)
+                Console.WriteLine("Now adding facet: " + nextFacet);
+
 			foreach (Point p in facetPoints)
 			{
                 if (Convert.ToInt32(p.Coordinates[nextFacet / 2].ToString()) == ((nextFacet % 2 == 0) ? 0 : Globals.k))
@@ -85,7 +94,7 @@ namespace UpdatedRP
 			}
 
 			//generate all valid d-1 polytopes that can be considered as a facet.
-			List<Graph> possibleFacets = Generate.dMinus1Polytopes(dMinus1FacetPoints, gi[nextFacet]);
+			List<Graph> possibleFacets = Generate._dMinus1Polytopes(dMinus1FacetPoints, gi[nextFacet]);
 
 			_facetsUsed[nextFacet] = true;
 
@@ -98,7 +107,7 @@ namespace UpdatedRP
 				foreach (Graph f in possibleFacets)
 				{
 					//todo -- test if .clone() is actually required
-					Graph temp = currFacets.clone();
+ 					Graph temp = currFacets.clone();
 					Graph h = f.clone();
 
 					//set values for current selected facet to shell
@@ -166,12 +175,18 @@ namespace UpdatedRP
 				if (Globals.messageOn)
 					Console.WriteLine("All facets checked.");
 
+                //todo --  remove, test
+                Globals.recursionDepth--;
+
 				return result;
 			}
 			else
 			{
 				if (Globals.messageOn)
 					Console.WriteLine("No possible facets.");
+
+				//todo --  remove, test
+				Globals.recursionDepth--;
 
 				return new List<Graph>();
 			}
@@ -203,12 +218,15 @@ namespace UpdatedRP
 		public static int calculateNextFacet(Point u, Point v, Graph currFacets, bool[] facetsUsed, int[] gi)
 		{
 			int min = Globals.k;
-			int result = 0;
+			int result = -1;
 
 			for (int i = 0; i < gi.Length; i++)
 			{
 				if (!facetsUsed[i])
 				{
+                    if (result < 0)
+                        result = i;
+                    
 					//first check for gi: score
 					if (gi[i] < min)
 					{

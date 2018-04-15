@@ -98,7 +98,7 @@ namespace UpdatedRP
             //set first point v to check
             for (int i = 0; i < uPoints.Length; i++)
             {
-                vPoints[i] = Globals.k - uPoints[i] - Globals.gap;
+                vPoints[i] = Math.Max(Globals.k - uPoints[i] - Globals.gap, 0);
             }
 
             while (true)
@@ -218,6 +218,15 @@ namespace UpdatedRP
 		//returns true if inverse has been checked (i.e. u,v is not a valid pair).
 		private static bool checkLexicographical(Point u, Point v)
         {
+			int[] vCoords = v.getIntArray();
+
+			//checks to see if any element of v is less than half of k/2
+			for (int i = 0; i < Globals.d; i++)
+			{
+				if (vCoords[i] < Math.Ceiling((double)Globals.k / 2))
+					return false;
+			}
+
             string vString = v.getLexicographicalString();
 
             if (Convert.ToInt16(vString) >= u.getIntRepresentation())
