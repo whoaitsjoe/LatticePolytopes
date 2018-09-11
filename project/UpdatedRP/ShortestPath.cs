@@ -53,7 +53,8 @@ namespace UpdatedRP
 			while (queue.Count > 0)
 			{
 				curr = queue.Dequeue();
-				foreach (string x in g.AdjList[curr])
+                string index = (curr.Length < 3) ? g.Points[Convert.ToInt32(curr) - 1].ToString() : curr;
+                foreach (string x in g.AdjList[index])
 				{
                     if (!visited.ContainsKey(x))
 					{

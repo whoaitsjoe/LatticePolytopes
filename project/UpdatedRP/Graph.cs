@@ -8,26 +8,34 @@ namespace UpdatedRP
     {
 		//Variables
 		//---------
-		List<Point> points; //List of points in point format
-        Dictionary<string, List<string>> adjList;
+		List<Point> Points  //List of points in point format
+		{
+            get;
+            set;
+        }
+        Dictionary<string, List<string>> AdjList
+        {
+            get;
+            set;
+        }
 
 		//Constructors
 		//------------
 		public Graph()
         {
-            points = new List<Point>();
-            adjList = new Dictionary<string, List<string>>();
+            Points = new List<Point>();
+            AdjList = new Dictionary<string, List<string>>();
         }
 
         //todo -- test
         //constructor taking in adj list in integer format where key references point in list and value references neighbouring points. (1-based indexing assumed).
         public Graph(List<Point> pts, Dictionary<int, List<int>> aL)
         {
-			points = new List<Point>();
-			adjList = new Dictionary<string, List<string>>();
+			Points = new List<Point>();
+			AdjList = new Dictionary<string, List<string>>();
 			
             foreach (Point p in pts)
-				points.Add(p);
+				Points.Add(p);
             
 			foreach (KeyValuePair<int, List<int>> entry in aL)
             {
@@ -35,48 +43,25 @@ namespace UpdatedRP
 
                 foreach(int i in entry.Value)
                 {
-                    temp.Add(points[i - 1].Coordinates);
+                    temp.Add(Points[i - 1].Coordinates);
                 }
 
-                adjList.Add(points[entry.Key - 1].ToString(), temp);
+                AdjList.Add(Points[entry.Key - 1].ToString(), temp);
             }
         }
 
         public Graph(List<Point> pts, Dictionary<string, List<string>> aL)
         {
-            points = pts;
-            adjList = aL;
+            Points = pts;
+            AdjList = aL;
         }
-
-		public List<Point> Points
-		{
-			get
-			{
-				return points;
-			}
-			set
-			{
-				points = value;
-			}
-		}
-		public Dictionary<string, List<string>> AdjList
-		{
-			get
-			{
-				return adjList;
-			}
-			set
-			{
-				adjList = value;
-			}
-		}
 
 		//Functions
 		//---------
 		public List<Point> getAllContainedPoints()
         {
             List<Point> result = new List<Point>();
-            foreach (Point p in points)
+            foreach (Point p in Points)
                 result.Add(p.clone());
             return result;
         }
@@ -85,7 +70,7 @@ namespace UpdatedRP
 		public List<Point> getAllContainedPoints(int dim, int minMax)
 		{
 			List<Point> result = new List<Point>();
-            foreach (Point p in points)
+            foreach (Point p in Points)
             {
                 if(Convert.ToInt32(p.Coordinates[dim].ToString()) == ((minMax == 0) ? 0 : Globals.k))
                     result.Add(p.clone());
@@ -96,7 +81,7 @@ namespace UpdatedRP
         public List<Point> getAllContainedPoints(int nextFacet)
         {
 			List<Point> result = new List<Point>();
-			foreach (Point p in points)
+			foreach (Point p in Points)
 			{
                 if (Convert.ToInt32(p.Coordinates[nextFacet/2].ToString()) == ((nextFacet % 2 == 0) ? 0 : Globals.k))
 					result.Add(p.clone());
@@ -109,12 +94,12 @@ namespace UpdatedRP
             if (index < 1)
                 return null;
             
-            return adjList[points[index].Coordinates];
+            return AdjList[Points[index].Coordinates];
         }
 
         public int getPointsCount()
         {
-            return points.Count;
+            return Points.Count;
         }
 
         //adds input parameter to current graph
@@ -127,7 +112,7 @@ namespace UpdatedRP
             {
                 found = false;
 
-                foreach(Point q in points)
+                foreach(Point q in Points)
                 {
                     if(p.Equals(q))
                     {
@@ -136,20 +121,20 @@ namespace UpdatedRP
                     }
                 }
                 if (!found)
-                    points.Add(p.clone());
+                    Points.Add(p.clone());
             }
 
             //copies over new entries in adjList
             foreach(KeyValuePair<string, List<string>> entry in g.AdjList)
             {
                 //if entry exists for key (e.g. point was previously in graph and has edges)
-                if(adjList.ContainsKey(entry.Key))
+                if(AdjList.ContainsKey(entry.Key))
                 {
                     foreach(string s in entry.Value)
                     {
                         found = false;
 
-                        foreach(string t in adjList[entry.Key])
+                        foreach(string t in AdjList[entry.Key])
                         {
                             if(t.Equals(s, StringComparison.Ordinal))
                             {
@@ -158,12 +143,12 @@ namespace UpdatedRP
                             }
                         }
                         if (!found)
-                            adjList[entry.Key].Add(s);
+                            AdjList[entry.Key].Add(s);
                     }
                 }
                 else
                 {
-                    adjList.Add(entry.Key, entry.Value);
+                    AdjList.Add(entry.Key, entry.Value);
                 }
             }
         }
@@ -172,12 +157,12 @@ namespace UpdatedRP
         {
             string result = "Points: \n";
 
-            foreach (Point x in points)
+            foreach (Point x in Points)
                 result += x + "\n";
 
             result += "Adjacency List: \n";
 
-            foreach (KeyValuePair<string, List<string>> pair in adjList)
+            foreach (KeyValuePair<string, List<string>> pair in AdjList)
             {
                 result += pair.Key + " : ";
                 foreach (string i in pair.Value)
@@ -193,10 +178,10 @@ namespace UpdatedRP
 			List<Point> pts = new List<Point>();
 			Dictionary<string, List<string>> aL = new Dictionary<string, List<string>>();
 
-			foreach (Point p in points)
+			foreach (Point p in Points)
 				pts.Add(p.clone());
 
-            foreach (KeyValuePair<string, List<string>> entry in adjList)
+            foreach (KeyValuePair<string, List<string>> entry in AdjList)
             {
                 List<string> valueList = new List<string>();
 
@@ -212,14 +197,14 @@ namespace UpdatedRP
 		public void addDimensionality(int dim, bool fZero)
 		{
             //add dimension to all points
-            foreach(Point p in points)
+            foreach(Point p in Points)
             {
                 p.increaseDimensionality(dim, fZero);
             }
 
 			//add dimension to all entries in adjList
             Dictionary<string, List<string>> newAL = new Dictionary<string, List<string>>();
-			foreach (KeyValuePair<string, List<string>> entry in adjList)
+			foreach (KeyValuePair<string, List<string>> entry in AdjList)
 			{
                 string tempKey = Point.increaseDimensionality(entry.Key, dim, fZero);
                 List<string> tempVal = new List<string>();
@@ -232,12 +217,37 @@ namespace UpdatedRP
                 newAL.Add(tempKey, tempVal);
 			}
 
-            adjList = newAL;
+            AdjList = newAL;
 		}
 
         public bool contains(Point p)
         {
-            return points.Contains(p);
+            return Points.Contains(p);
+        }
+
+        public List<string> pointInStringArray()
+        {
+            List<string> result = new List<string>();
+
+            foreach(Point p in Points)
+                result.Add(p.Coordinates);
+
+            return result;
+        }
+
+        public int diameter()
+        {
+            int max = 0;
+            int curr;
+
+            foreach(Point p in Points)
+            {
+                curr = ShortestPath.BFS(this, p);
+                if (curr > max)
+                    max = curr;
+            }
+
+            return max;
         }
     }
 }

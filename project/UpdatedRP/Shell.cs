@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
+using System.Text;
+using System.Diagnostics;
 
 namespace UpdatedRP
 {
 	public class Shell
 	{
 		public static int totalShelling = 0;
+		public static List<Graph> localSymmetryGraphs;
         
         //***********************
 		//Shelling Main functions
@@ -48,10 +51,15 @@ namespace UpdatedRP
             foreach (Point p in Globals.fixedVertices)
                 vertexSet.Add(p);
 
-            return shellHelper(subSkeleton, vertexSet, nonvertexSet, coreSet, facetsUsed, u, v, facetDiameter);
+            int[] initial_gi = new int[Globals.d * 2];
+
+            for (int i = 0; i < Globals.d * 2; i++)
+                initial_gi[i] = Globals.gap * 2;
+
+            return shellHelper(subSkeleton, vertexSet, nonvertexSet, coreSet, facetsUsed, u, v, facetDiameter, initial_gi);
 		}
 
-        private static List<Graph> shellHelper(Graph currFacets, List<Point> vertexSet, List<Point> nonVertexSet, List<Point> coreSet, bool[] facetsUsed, Point u, Point v, int[] facetDiameter)
+        private static List<Graph> shellHelper(Graph currFacets, List<Point> vertexSet, List<Point> nonVertexSet, List<Point> coreSet, bool[] facetsUsed, Point u, Point v, int[] facetDiameter, int[] _gi)
 		{
             if (Globals.messageOn)
                 Console.WriteLine("Number of added facets in shelling: " + facetsUsed.Where(c => c).Count());
@@ -76,7 +84,7 @@ namespace UpdatedRP
 				_vertexSet.Add(p.clone());
             
 			//calculates gi values
-			int[] gi = updateGi(currFacets, u, v);
+			int[] gi = updateGi(currFacets, u, v, _gi);
 
 			//calculates next facet to add
 			int nextFacet = calculateNextFacet(u, v, currFacets, facetsUsed, gi);
@@ -151,11 +159,12 @@ namespace UpdatedRP
 					//if shelling is incomplete
 					if (checkUnshelledFacet(_facetsUsed))
 					{
-						result.AddRange(shellHelper(temp, _vertexSet, _nonVertexSet, _corePointSet, _facetsUsed, u, v, facetDiameter));
+						result.AddRange(shellHelper(temp, _vertexSet, _nonVertexSet, _corePointSet, _facetsUsed, u, v, facetDiameter, gi));
 					}
 					else
 					{
-						if (!CDD.compareAlToPoints(temp.Points)) //convex hull call
+                        if (!CDD.compareAlToPoints(temp.Points)) //convex hull call -- old cdd call, some shelling produced have invalid edges?
+                        //if(!CDD.convexHullAdjList())
 							continue;
 
 						totalShelling++;
@@ -195,7 +204,7 @@ namespace UpdatedRP
 		//*************************
 		//Shelling Helper Functions
 		//*************************
-		public static int[] updateGi(Graph currFacets, Point u, Point v)
+        public static int[] updateGi(Graph currFacets, Point u, Point v, int[] old_gi)
 		{
 			int[] result = new int[Globals.d * 2];
 
@@ -205,6 +214,8 @@ namespace UpdatedRP
 
 				if (result[i] < 0)
 					result[i] = 0;
+
+                result[i] = Math.Min(result[i], old_gi[i]);
 			}
 
 			return result;
@@ -435,24 +446,709 @@ namespace UpdatedRP
 		//************************
 		//After shelling functions
 		//************************
-		//todo -- any reason why one function has out parameter and another returns something?
-		public static void symmetryGroup(List<Graph> inputGraphs, out List<Graph> graphTypes)
+
+        //Sort points lexicographically, then compare points list
+		public static List<Graph> removeRedundantShelling(List<Graph> graphs)
         {
-            graphTypes = new List<Graph>();
+            List<Graph> uniqueGraphs = new List<Graph>();
+			List<List<string>> points = new List<List<string>>();
+			bool[] duplicate = new bool[graphs.Count];
+
+			for (int i = 0; i < duplicate.Length; i++)
+				duplicate[i] = false;
+
+            //sort points lexicographically
+			foreach (Graph g in graphs)
+			{
+                List<string> thisString = g.pointInStringArray();
+				thisString.Sort();
+				points.Add(thisString);
+			}
+
+            //find duplicates
+            for (int i = 0; i < points.Count - 1; i++)
+            {
+                for (int j = i + 1; j < points.Count; j++)
+                {
+                    if (i == j || duplicate[j])
+                        continue;
+
+                    if (points[i].SequenceEqual(points[j]))
+                        duplicate[j] = true;
+                }
+            }
+
+            //add non-duplicates to result
+            for (int i = 0; i < graphs.Count; i++)
+            {
+                if (!duplicate[i])
+                    uniqueGraphs.Add(graphs[i]);
+            }
+
+            return uniqueGraphs;
         }
+
+        public static List<Graph> symmetryGroup(List<Graph> graphs, bool checkFacetIncidence = false)
+        {
+            List<Graph> uniqueGraphs = new List<Graph>();
+			Dictionary<int, List<Graph>> separateByVertexCount = new Dictionary<int, List<Graph>>();
+            Dictionary<string, List<Graph>> separateByVertexDegree;
+            Dictionary<string, List<Graph>> separateByFacetDegree;
+
+            foreach (Graph g in graphs)
+			{
+				int vertexCount = g.Points.Count;
+
+				if (separateByVertexCount.ContainsKey(vertexCount))
+					separateByVertexCount[vertexCount].Add(g);
+				else
+					separateByVertexCount.Add(vertexCount, new List<Graph>() { g });
+			}
+
+			foreach (KeyValuePair<int, List<Graph>> entry in separateByVertexCount)
+			{
+				separateByVertexDegree = new Dictionary<string, List<Graph>>();
+
+				foreach (Graph g in entry.Value)
+				{
+					string degreeSeq = getDegreeSequence(g);
+					if (separateByVertexDegree.ContainsKey(degreeSeq))
+						separateByVertexDegree[degreeSeq].Add(g);
+					else
+						separateByVertexDegree.Add(degreeSeq, new List<Graph>() { g });
+				}
+
+				foreach (KeyValuePair<string, List<Graph>> entry2 in separateByVertexDegree)
+				{
+                    separateByFacetDegree = new Dictionary<string, List<Graph>>();
+
+                    if (checkFacetIncidence)
+                    {
+						foreach (Graph g in entry2.Value)
+						{
+							if (g.Points.Count > 0)
+							{
+								string degreeSeq2 = getFacetSequence(g);
+								if (degreeSeq2.Length > 0)
+								{
+									if (separateByFacetDegree.ContainsKey(degreeSeq2))
+										separateByFacetDegree[degreeSeq2].Add(g);
+									else
+										separateByFacetDegree.Add(degreeSeq2, new List<Graph>() { g });
+								}
+							}
+						}
+
+						foreach (KeyValuePair<string, List<Graph>> entry3 in separateByFacetDegree)
+						{
+							localSymmetryGraphs = new List<Graph>();
+							foreach (Graph g in entry3.Value)
+							{
+								if (uniqueGraphs.Count == 0)
+									uniqueGraphs.Add(g.clone());
+								else if (!symmetryHelper(g, uniqueGraphs, 1))   //TODO -- update symmetryHelper so it checks all combinations of checks.
+									uniqueGraphs.Add(g.clone());
+							}
+						}
+                    }
+                    else
+                    {
+                        localSymmetryGraphs = new List<Graph>();
+                        foreach (Graph g in entry2.Value)
+                        {
+                            if (uniqueGraphs.Count == 0)
+                                uniqueGraphs.Add(g.clone());
+                            else if (!symmetryHelper(g, uniqueGraphs, 1))
+                                uniqueGraphs.Add(g.clone());
+                        }
+                    }
+				}
+			}
+
+			return uniqueGraphs;
+        }
+
+        //use adjlist to help determine symmetry
+		//returns true if a symmetric shape is found in given list of shapes.
+		public static bool symmetryHelper(Graph g, List<Graph> currentGraphs, int oper)
+		{
+			if (oper > 6)
+				return false;
+
+			Graph temp = g.clone();
+
+			switch (oper)
+			{
+				//k - x1
+				case 1:
+					foreach (Point p in temp.Points)
+					{
+						//p.Coordinates[0] = Globals.k - p.Coordinates[0];
+                        int[] tempArr = p.getIntArray();
+                        tempArr[0] = Globals.k - tempArr[0];
+                        p.Coordinates = Point.convertIntArrayToString(tempArr);
+					}
+					break;
+				//k - x2
+				case 2:
+					foreach (Point p in temp.Points)
+					{
+						//p.Coordinates[1] = Globals.k - p.Coordinates[1];
+						int[] tempArr = p.getIntArray();
+						tempArr[1] = Globals.k - tempArr[1];
+						p.Coordinates = Point.convertIntArrayToString(tempArr);
+					}
+					break;
+				//k - x3
+				case 3:
+					foreach (Point p in temp.Points)
+					{
+						//p.Coordinates[2] = Globals.k - p.Coordinates[2];
+						int[] tempArr = p.getIntArray();
+						tempArr[2] = Globals.k - tempArr[2];
+						p.Coordinates = Point.convertIntArrayToString(tempArr);
+					}
+					break;
+				//x1 swap x2
+				case 4:
+					foreach (Point p in temp.Points)
+					{
+						//int tempVal = p.Coordinates[0];
+						//p.Coordinates[0] = p.Coordinates[1];
+						//p.Coordinates[1] = tempVal;
+
+                        int[] tempArr = p.getIntArray();
+                        int tempVal = tempArr[0];
+                        tempArr[0] = tempArr[1];
+                        tempArr[1] = tempVal;
+                        p.Coordinates = Point.convertIntArrayToString(tempArr);
+					}
+					break;
+				//x1 swap x3
+				case 5:
+					foreach (Point p in temp.Points)
+					{
+						//int tempVal = p.Coordinates[0];
+						//p.Coordinates[0] = p.Coordinates[2];
+						//p.Coordinates[2] = tempVal;
+
+						int[] tempArr = p.getIntArray();
+						int tempVal = tempArr[0];
+						tempArr[0] = tempArr[2];
+						tempArr[2] = tempVal;
+						p.Coordinates = Point.convertIntArrayToString(tempArr);
+					}
+					break;
+				//x2 swap x3
+				case 6:
+					foreach (Point p in temp.Points)
+					{
+						//int tempVal = p.Coordinates[1];
+						//p.Coordinates[1] = p.Coordinates[2];
+						//p.Coordinates[2] = tempVal;
+
+						int[] tempArr = p.getIntArray();
+						int tempVal = tempArr[1];
+						tempArr[1] = tempArr[2];
+						tempArr[2] = tempVal;
+						p.Coordinates = Point.convertIntArrayToString(tempArr);
+					}
+					break;
+				default:
+					Console.WriteLine("ERROR: Unknown operation parameter for SymmetryHelper.");
+					break;
+			}
+
+			foreach (Graph h in localSymmetryGraphs)
+			{
+				if (compareGraphs(temp, h))
+					return false;
+				localSymmetryGraphs.Add(temp);
+			}
+
+			foreach (Graph h in currentGraphs)
+			{
+				if (compareGraphs(temp, h))
+					return true;
+			}
+
+			return symmetryHelper(g, currentGraphs, oper + 1) || symmetryHelper(temp, currentGraphs, oper + 1);
+		}
+
+		//determine sequence of operations.
+        //recursively iterate over every operation at every level. Could this be too slow?
+
+		public static bool symmetryHelperNew(Graph g, List<Graph> currentGraphs, int oper)
+		{
+            Graph temp = g.clone();
+
+            for (int i = oper; i <= 6; i++)
+			{
+                switch(i)
+                {
+					//k - x1
+					case 1:
+						foreach (Point p in temp.Points)
+						{
+							int[] tempArr = p.getIntArray();
+							tempArr[0] = Globals.k - tempArr[0];
+							p.Coordinates = Point.convertIntArrayToString(tempArr);
+						}
+						break;
+					//k - x2
+					case 2:
+						foreach (Point p in temp.Points)
+						{
+							int[] tempArr = p.getIntArray();
+							tempArr[1] = Globals.k - tempArr[1];
+							p.Coordinates = Point.convertIntArrayToString(tempArr);
+						}
+						break;
+					//k - x3
+					case 3:
+						foreach (Point p in temp.Points)
+						{
+							int[] tempArr = p.getIntArray();
+							tempArr[2] = Globals.k - tempArr[2];
+							p.Coordinates = Point.convertIntArrayToString(tempArr);
+						}
+						break;
+					//x1 swap x2
+					case 4:
+						foreach (Point p in temp.Points)
+						{
+							int[] tempArr = p.getIntArray();
+							int tempVal = tempArr[0];
+							tempArr[0] = tempArr[1];
+							tempArr[1] = tempVal;
+							p.Coordinates = Point.convertIntArrayToString(tempArr);
+						}
+						break;
+					//x1 swap x3
+					case 5:
+						foreach (Point p in temp.Points)
+						{
+							int[] tempArr = p.getIntArray();
+							int tempVal = tempArr[0];
+							tempArr[0] = tempArr[2];
+							tempArr[2] = tempVal;
+							p.Coordinates = Point.convertIntArrayToString(tempArr);
+						}
+						break;
+					//x2 swap x3
+					case 6:
+						foreach (Point p in temp.Points)
+						{
+							int[] tempArr = p.getIntArray();
+							int tempVal = tempArr[1];
+							tempArr[1] = tempArr[2];
+							tempArr[2] = tempVal;
+							p.Coordinates = Point.convertIntArrayToString(tempArr);
+						}
+						break;
+					default:
+						Console.WriteLine("ERROR: Unknown operation parameter for SymmetryHelper.");
+						break;
+                }
+
+				foreach (Graph h in currentGraphs)
+				{
+					if (compareGraphs(temp, h))
+						return true;
+				}
+
+                //recursively call remaining operations if current operation does not detect symmetry.
+                if (symmetryHelperNew(g, currentGraphs, oper + 1))
+                    return true;
+            }
+
+            return false;
+		}
+
+		//returns true if both graphs have the same vertices.
+		public static bool compareGraphs(Graph g, Graph h)
+		{
+			if (g.Points.Count != h.Points.Count)
+				return false;
+
+			bool found;
+
+			foreach (Point p in g.Points)
+			{
+				found = false;
+				foreach (Point q in h.Points)
+				{
+					if (p.Equals(q))
+					{
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+					return false;
+			}
+
+			return true;
+		}
+
+		public static string getDegreeSequence(Graph g)
+		{
+			List<int> degrees = new List<int>();
+			StringBuilder builder = new StringBuilder();
+
+			foreach (KeyValuePair<string, List<string>> entry in g.AdjList)
+			{
+				degrees.Add(entry.Value.Count);
+			}
+
+			degrees.Sort();
+
+			foreach (int i in degrees)
+				builder.Append(i);
+
+			return builder.ToString();
+		}
+
+        public static string getFacetSequence(Graph g)
+        {
+            List<int> degrees = new List<int>();
+            StringBuilder builder = new StringBuilder();
+
+            string fileName = "/Users/Joe/Code/research/Files/temp/out.ext";
+            Parse.writeToFile(g.Points, fileName);
+
+			var proc = new Process
+			{
+				StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/Users/Joe/Code/research/cdd/src/scdd",
+                    Arguments = fileName,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = false,
+					CreateNoWindow = true
+				}
+			};
+
+            proc.Start();
+            proc.WaitForExit();
+                   
+            string incidenceFile = "/Users/Joe/Code/research/Files/temp/out.icd";
+            degrees = FileIO.readFacetIncidence(incidenceFile);
+
+			foreach (int i in degrees)
+				builder.Append(i);
+            
+            return builder.ToString();
+        }
+
         public static List<Graph> checkInterior(List<Graph> shellings)
         {
-            return new List<Graph>();
+			List<Point> points;
+			List<Point> possibleInterior;
+			List<Graph> result = new List<Graph>();
+
+			foreach (Graph g in shellings)
+			{
+				points = new List<Point>();
+				possibleInterior = new List<Point>();
+
+				foreach (Point h in g.Points)
+					points.Add(h.clone());
+
+				//todo -- generalize, currently hardcoded for d=3
+				for (int i = 1; i < Globals.k; i++)
+				{
+					for (int j = 1; j < Globals.k; j++)
+					{
+						for (int k = 1; k < Globals.k; k++)
+						{
+                            Point temp = new Point(i.ToString() + j.ToString() + k.ToString());
+							points.Add(temp);
+
+							if (CDD.convexHullVertexList(points))
+								possibleInterior.Add(temp.clone());
+
+							points.Remove(temp);
+						}
+					}
+				}
+
+				//Console.WriteLine("Total Number of interior points: {0}", possibleInterior.Count);
+				//Console.WriteLine("u: {0}, {1}, {2}. v: {3}, {4}, {5}", Globals.u.Coordinates[0],
+				//Globals.u.Coordinates[1], Globals.u.Coordinates[2], Globals.v.Coordinates[0],
+				//Globals.v.Coordinates[1], Globals.v.Coordinates[2]);
+				//Console.WriteLine("Number of potential interior points: {0}", possibleInterior.Count);
+                List<Graph> tempVar = checkInteriorHelper(g, possibleInterior);
+
+                if (tempVar.Count == 0)
+                    Console.WriteLine("aa");
+
+                result.AddRange(tempVar);
+			}
+
+			return result;
         }
+
+		//takes in graph g (full shelling), and a list of possible interior points and tries to find all feasible shelling
+		public static List<Graph> checkInteriorHelper(Graph g, List<Point> interiorPoints)
+		{
+			List<Point> points = new List<Point>();
+			List<Graph> result = new List<Graph>();
+			List<Point> graphPoints;
+			Graph h = g.clone();
+
+			if (interiorPoints.Count == 0)
+			{
+				if (CDD.convexHullAdjList(g.Points, new List<Point>(), out h))
+				{
+                    //todo -- see if this is relevant
+					//Globals.internalPointShelling++;
+					//Globals.interiorPolytopes.Add(h.clone());
+
+					if (h.diameter() >= Globals.maxDiameter[Globals.k] + Globals.k - Globals.gap)
+					{
+						result.Add(h);
+						return result;
+					}
+
+					return new List<Graph>();
+				}
+				else
+					return new List<Graph>();
+			}
+
+			foreach (Point p in interiorPoints)
+				points.Add(p.clone());
+
+			graphPoints = h.getAllContainedPoints();
+			graphPoints.Add(interiorPoints[0]);
+			points.Remove(interiorPoints[0]);
+
+			if (CDD.convexHullAdjList(graphPoints, new List<Point>(), out h))
+			{
+				result.AddRange(checkInteriorHelper(h, points));
+			}
+
+			if (interiorPoints.Count > 0)
+				result.AddRange(checkInteriorHelper(g, points));
+
+			return result;
+		}
+
+		//retract, check diameter (no other checks required)
+		public static Graph retractable(Graph g, int direction, List<Point> unchangedVertexSet)
+		{
+			Graph newGraph = new Graph();
+			Graph output = new Graph();
+			bool found;
+
+			List<Point> newPoints = new List<Point>();
+
+			foreach (Point p in unchangedVertexSet)
+				newPoints.Add(p.clone());
+
+			foreach (Point p in g.Points)
+			{
+				found = false;
+				foreach (Point q in unchangedVertexSet)
+				{
+					if (p.Equals(q))
+					{
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+				{
+                    int[] tempArr = p.getIntArray();
+
+					if (direction < Globals.d)
+						tempArr[direction]--;
+					else if (direction == Globals.d)
+					{
+						tempArr[0]--;
+						tempArr[1]--;
+					}
+					else if (direction == Globals.d + 1)
+					{
+						tempArr[0]--;
+						tempArr[2]--;
+					}
+					else if (direction == Globals.d + 2)
+					{
+						tempArr[1]--;
+						tempArr[2]--;
+					}
+                    newPoints.Add(new Point(Point.convertIntArrayToString(tempArr)));
+				}
+			}
+
+			CDD.convexHullAdjList(new List<Point>(), newPoints, out output);
+
+            return output;
+		}
+
+        /*
         public static void retractable(Graph g, int direction, List<Point> unchangedVertexSet, out Graph output)
         {
             output = new Graph();
-        }
+        }*/
 		public static List<Graph> retractable(List<Graph> inputGraph)
 		{
 			List<Graph> result = new List<Graph>();
 
 			return result;
+		}
+
+
+		//direction is from 0 up to d - 1, where 0 = x1, 1 = x2, ..., x1x2, x1x3, x2x3
+		public static bool expandable(Graph g, out List<int> direction, out List<List<Point>> unchangedVertexSet)
+		{
+			bool result = false;
+
+			unchangedVertexSet = new List<List<Point>>();
+			direction = new List<int>();
+			List<Point> sameVertexSet;
+
+			//check 2*d directions, unit vectors + combinations of 2 vectors (e.g. 110,101,011).
+			for (int i = 0; i < Globals.d * 2; i++)
+			{
+				if (expandableHelper(g, i, out sameVertexSet))
+				{
+                    unchangedVertexSet.Add(sameVertexSet);
+					direction.Add(i);
+					result = true;
+				}
+			}
+
+			return result;
+		}
+
+		public static bool expandableHelper(Graph g, int direction, out List<Point> unchangedVertexSet)
+		{
+			List<Point> newPointList = new List<Point>();
+			unchangedVertexSet = new List<Point>();
+			Graph newGraph;
+
+			foreach (Point p in g.Points)
+			{
+				int[] coords = new int[g.Points[0].getDimension()];
+				for (int i = 0; i < g.Points[0].getDimension(); i++)
+				{
+					//todo -- generalize for all directions and all d's
+					if (direction < Globals.d)
+						coords[i] = (i == direction) ? p.Coordinates[i] + 1 : p.Coordinates[i];
+					else if (direction == Globals.d)
+						coords[i] = (i == 0 || i == 1) ? p.Coordinates[i] + 1 : p.Coordinates[i];
+					else if (direction == Globals.d + 1)
+						coords[i] = (i == 0 || i == 2) ? p.Coordinates[i] + 1 : p.Coordinates[i];
+					else if (direction == Globals.d + 2)
+						coords[i] = (i == 1 || i == 2) ? p.Coordinates[i] + 1 : p.Coordinates[i];
+				}
+
+				Point q = new Point(coords);
+
+				newPointList.Add(q);
+				newPointList.Add(p.clone());
+			}
+
+			if (!CDD.convexHullAdjList(new List<Point>(), newPointList, out newGraph))
+				return false;
+
+			if (newGraph.Points.Count == g.Points.Count)
+            {
+				foreach (Point p in g.Points)
+				{
+					foreach (Point q in newGraph.Points)
+					{
+						if (p.Equals(q))
+						{
+							unchangedVertexSet.Add(p.clone());
+							break;
+						}
+					}
+				}
+                return true;
+            }
+			else
+				return false;
+		}
+
+        //Takes in a graph, checks to see if it's expandable in every direction, then
+        //retract in expandable directions and checks diameter of retracted to see
+        //if result is a valid polytope.
+        public static bool retractable(Graph g, out List<Graph> outGraphs)
+        {
+            outGraphs = new List<Graph>();
+            List<int> directions;
+            List<List<Point>> unchangedPoints;
+
+            if(!expandable(g, out directions, out unchangedPoints))
+                return false;
+            else
+            {
+                foreach(int dir in directions)
+                {
+                    
+                }
+            }
+
+            return true;
+        }
+
+		//retract, check diameter (no other checks required)
+		public static void retractable(Graph g, int direction, List<Point> unchangedVertexSet, out Graph output)
+		{
+			Graph newGraph = new Graph();
+			output = new Graph();
+			bool found;
+
+			List<Point> newPoints = new List<Point>();
+
+			foreach (Point p in unchangedVertexSet)
+				newPoints.Add(p.clone());
+
+			foreach (Point p in g.Points)
+			{
+				found = false;
+				foreach (Point q in unchangedVertexSet)
+				{
+					if (p.Equals(q))
+					{
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+				{
+					Point temp = p.clone();
+
+					if (direction < Globals.d)
+						temp.Coordinates[direction]--;
+					else if (direction == Globals.d)
+					{
+						temp.Coordinates[0]--;
+						temp.Coordinates[1]--;
+					}
+					else if (direction == Globals.d + 1)
+					{
+						temp.Coordinates[0]--;
+						temp.Coordinates[2]--;
+					}
+					else if (direction == Globals.d + 2)
+					{
+						temp.Coordinates[1]--;
+						temp.Coordinates[2]--;
+					}
+					newPoints.Add(temp);
+				}
+			}
+
+			CDD.convexHullAdjList(new List<Point>(), newPoints, out output);
 		}
 	}
 }

@@ -101,6 +101,75 @@ namespace UpdatedRP
 				{
                     List<string> adjList = parseAdjList(lines[i], out id);
                     a.Add(id, adjList);
+                    /*if(id != "end")
+                        a.Add(pts[Convert.ToInt32(id) - 1].ToString(), adjList);*/
+				}
+			}
+			return result;
+		}
+
+		//Reads list of graphs from file
+		//File has format as follows:
+		//Facet #
+		//point 1 (e.g. 001)
+		//--
+		//edge 1 (e.g. 1 : 2 3)
+		public static List<Graph> readGraphFromFileOldFormat(string fName)
+		{
+			List<Graph> result = new List<Graph>();
+			string[] lines = System.IO.File.ReadAllLines(fName);
+			bool vertex = false;
+			bool edge = false;
+			List<Point> pts = new List<Point>();
+			Dictionary<string, List<string>> a = new Dictionary<string, List<string>>();
+			string id;
+
+			for (int i = 0; i < lines.Length; i++)
+			{
+				if (lines[i].StartsWith("Facet", StringComparison.Ordinal))
+				{
+					vertex = true;
+					edge = false;
+					i++;
+					if (pts.Count > 0)
+					{
+						result.Add(new Graph(pts, a));
+					}
+					pts = new List<Point>();
+				}
+				else if (lines[i] == "--")
+				{
+					vertex = false;
+					edge = true;
+					i++;
+					a = new Dictionary<string, List<string>>();
+				}
+				else if (lines[i] == "end")
+				{
+					result.Add(new Graph(pts, a));
+				}
+
+				if (vertex)
+				{
+					pts.Add(new Point(lines[i]));
+				}
+				if (edge)
+				{
+					List<string> tempList = parseAdjList(lines[i], out id);
+                    List<string> adjList = new List<string>();
+
+                    foreach(string s in tempList)
+                    {
+                        int tempVal;
+                        if(Int32.TryParse(s, out tempVal))
+                        {
+                            adjList.Add(pts[tempVal - 1].ToString());
+                        }
+                    }
+                        
+					//a.Add(id, adjList);
+					if(id != "end")
+                        a.Add(pts[Convert.ToInt32(id) - 1].ToString(), adjList);
 				}
 			}
 			return result;
@@ -193,5 +262,33 @@ namespace UpdatedRP
 
 			return result;
 		}
+
+		//reads facet incidence file and returns facet incidence as list of ints (sorted).
+		//File has format as follows:
+		//icd_file: ...
+		//begin
+		// int1 int2
+		//1 incidence# : incidence1 incidence2 ...
+		//2 incidence# : incidence1 incidence2 ...
+		public static List<int> readFacetIncidence(string fName)
+        {
+            List<int> result = new List<int>();
+			string[] lines = System.IO.File.ReadAllLines(fName);
+
+			for (int i = 3; i < lines.Length - 1; i++)
+			{
+                string[] tokens = lines[i].Split(' ');
+
+                if (tokens.Length < 3)
+                    continue;
+
+                int incidence = Int32.Parse(tokens[2]);
+                result.Add(incidence);
+			}
+
+            result.Sort();
+
+            return result;
+        }
     }
 }

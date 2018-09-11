@@ -27,9 +27,10 @@ namespace UpdatedRP
 
         //Directory for pre-computed data
         public static string directory = "/Users/Joe/Code/research/latticePolytopes/Files/";
+        public static string facetIncidenceFile = "";
 
         //bool to save results
-        public static bool writeToFile = false;
+        public static bool writeToFile = true;
 
         //temp variable to hold 222 polytopes
         public static Dictionary<string, List<Graph>> _222polytopes;

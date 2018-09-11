@@ -46,6 +46,7 @@
     <Compile Include="Tester.cs" />
     <Compile Include="ShortestPath.cs" />
     <Compile Include="Generate.cs" />
+    <Compile Include="PostShelling.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

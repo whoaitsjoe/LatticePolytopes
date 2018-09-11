@@ -8,38 +8,30 @@ namespace UpdatedRP
     {
 		//Variables
 		//---------
-		string coordinates;
+        string Coordinates
+        {
+            get;
+            set;
+        }
 
 		//Constructors
 		//------------
 		public Point()
 		{
-            coordinates = "";
+            Coordinates = "";
 		}
 		public Point(string coord)
 		{
-            coordinates = coord;
+            Coordinates = coord;
 		}
         public Point(int[] input)
         {
-            coordinates = string.Join("",input);
+            Coordinates = string.Join("",input);
         }
-
-		public string Coordinates
-		{
-			get
-			{
-                return coordinates;
-			}
-			set
-			{
-                coordinates = value;
-			}
-		}
 
 		public int getDimension()
 		{
-			return coordinates.Length;
+			return Coordinates.Length;
 		}
 
 
@@ -47,35 +39,35 @@ namespace UpdatedRP
 		//---------
         public override string ToString()
 		{
-            return coordinates;
+            return Coordinates;
 		}
 
         //todo -- test
 		public bool Equals(Point p)
 		{
-            return coordinates.Equals(p.Coordinates, StringComparison.Ordinal);
+            return Coordinates.Equals(p.Coordinates, StringComparison.Ordinal);
 		}
 
         public bool Equals(string s)
         {
-            return coordinates.Equals(s, StringComparison.Ordinal);
+            return Coordinates.Equals(s, StringComparison.Ordinal);
         }
 
         //todo -- test
 		public Point clone()
 		{			
-			return new Point(coordinates);
+			return new Point(Coordinates);
 		}
 
         //todo -- test
         public bool shareFacet(Point p)
         {
-            if (p.Coordinates.Length != coordinates.Length)
+            if (p.Coordinates.Length != Coordinates.Length)
                 return false;
             
-            for (int i = 0; i < coordinates.Length; i++)
+            for (int i = 0; i < Coordinates.Length; i++)
             {
-                if (p.Coordinates[i] == 0 && coordinates[i] == 0 || p.Coordinates[i] == Globals.k && coordinates[i] == Globals.k)
+                if (p.Coordinates[i] == 0 && Coordinates[i] == 0 || p.Coordinates[i] == Globals.k && Coordinates[i] == Globals.k)
                     return true;
             }
 
@@ -88,21 +80,21 @@ namespace UpdatedRP
 		{
             string temp;
 
-            temp = coordinates.Substring(0, dim);
+            temp = Coordinates.Substring(0, dim);
             temp += (fZero) ? ("0") : Globals.k.ToString();
-            temp += coordinates.Substring(dim);
+            temp += Coordinates.Substring(dim);
 
-            coordinates = temp;
+            Coordinates = temp;
 		}
 		public void increaseDimensionality(int nextFacet)
 		{
 			string temp;
 
-			temp = coordinates.Substring(0, nextFacet/2);
+			temp = Coordinates.Substring(0, nextFacet/2);
 			temp += (nextFacet % 2 == 0) ? ("0") : Globals.k.ToString();
-			temp += coordinates.Substring(nextFacet/2);
+			temp += Coordinates.Substring(nextFacet/2);
 
-			coordinates = temp;
+			Coordinates = temp;
 		}
 		public static string increaseDimensionality(string coords, int dim, bool fZero)
 		{
@@ -121,8 +113,8 @@ namespace UpdatedRP
         {
             string temp;
              
-            temp = coordinates.Substring(0, dim);
-            temp += coordinates.Substring(dim + 1);
+            temp = Coordinates.Substring(0, dim);
+            temp += Coordinates.Substring(dim + 1);
 
             return new Point(temp);
         }
@@ -147,12 +139,12 @@ namespace UpdatedRP
 
         public int[] getIntArray()
         {
-            return new List<char>(coordinates.ToCharArray()).ConvertAll(c => Convert.ToInt32(c.ToString())).ToArray();
+            return new List<char>(Coordinates.ToCharArray()).ConvertAll(c => Convert.ToInt32(c.ToString())).ToArray();
         }
 
         public string getLexicographicalString()
         {
-            char[] c = coordinates.ToCharArray();
+            char[] c = Coordinates.ToCharArray();
 
             Array.Sort(c);
 
@@ -162,7 +154,7 @@ namespace UpdatedRP
         //todo -- change data type to long or double to accomodate larger d/k values.
         public int getIntRepresentation()
         {
-            return Convert.ToInt32(coordinates);
+            return Convert.ToInt32(Coordinates);
         }
 
         public static string convertIntArrayToString(int[] arr)

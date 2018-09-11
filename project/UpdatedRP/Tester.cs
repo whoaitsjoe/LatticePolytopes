@@ -1,10 +1,56 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Collections;
+using System.Timers;
 
 namespace UpdatedRP
 {
     public class Tester
     {
+
+        public static void testNewSymmetry()
+        {
+            Graph passGraph = new Graph(), failGraph = new Graph();
+            passGraph.Points = new List<Point>() { new Point("000"), new Point("001"), new Point("013"), new Point("023"),
+			new Point("031"), new Point("030"), new Point("331"), new Point("330"), new Point("301"), new Point("300") };
+            failGraph.Points = new List<Point>() { new Point("000"), new Point("001"), new Point("013"), new Point("023"),
+			new Point("031"), new Point("030"), new Point("331"), new Point("330"), new Point("301"), new Point("302") };
+
+            List<Graph> compGraphs = new List<Graph>();
+
+			compGraphs.Add(new Graph(new List<Point>() { new Point("333"), new Point("330"), new Point("303"), new Point("300"),
+                new Point("233"), new Point("230"), new Point("203"), new Point("200"), new Point("010"), new Point("020") },
+				new Dictionary<int, List<int>>()));
+			compGraphs.Add(new Graph(new List<Point>() { new Point("333"), new Point("330"), new Point("303"), new Point("300"),
+				new Point("233"), new Point("230"), new Point("203"), new Point("200"), new Point("010"), new Point("030") },
+				new Dictionary<int, List<int>>()));
+			compGraphs.Add(new Graph(new List<Point>() { new Point("333"), new Point("330"), new Point("303"), new Point("300"),
+				new Point("233"), new Point("230"), new Point("203"), new Point("200"), new Point("010"), new Point("021") },
+				new Dictionary<int, List<int>>()));
+
+			var watch = System.Diagnostics.Stopwatch.StartNew();
+			Console.Write("\nThis should be TRUE: " + Shell.symmetryHelperNew(passGraph, compGraphs, 1));
+			Console.Write("\nThis should be FALSE: " + Shell.symmetryHelperNew(failGraph, compGraphs, 1));
+			watch.Stop();
+
+			var elapsedMs = watch.ElapsedMilliseconds;
+			Console.WriteLine("\nTotal elapsed time: " + elapsedMs);
+        }
+
+
+        public static void testPostShelling()
+        {
+			string[] fileEntries = Directory.GetFiles(Globals.directory + Globals.d.ToString() + Globals.k.ToString()
+								  + Globals.gap.ToString() + "/");
+            List<Graph> shellings = new List<Graph>();
+
+            foreach (string file in fileEntries)
+                shellings.AddRange(FileIO.readGraphFromFileOldFormat(file));
+            Console.WriteLine("Total shellings: {0}", shellings.Count);
+			PostShelling.postShellingProcess(shellings);
+        }
+
         public static void testGenUV()
         {
             List<Point> u;

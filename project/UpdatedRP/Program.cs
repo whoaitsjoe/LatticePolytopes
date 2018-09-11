@@ -10,7 +10,7 @@ namespace UpdatedRP
         {
             //setting execution parameters
             Globals.d = 3;
-			Globals.k = 2;
+			Globals.k = 3;
 			Globals.gap = 1;
             //this should be read from file.
 			Globals.maxDiameter = new int[] { 0, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8 };
@@ -18,7 +18,6 @@ namespace UpdatedRP
             Globals.maxLength = Globals.diameter + Globals.k - Globals.gap; //delta(d-1,k)+k-gap, the number to be eliminated
 			Globals.chTime = 0;
             Globals.messageOn = false;
-
             initialize();
 
             /*var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -32,12 +31,17 @@ namespace UpdatedRP
             //Tester.testInverse();
             //Tester.testGeneratePolytopes();
             //shelling();
-            shelling(new Point("000"), new Point("122"));
+            //shelling(new Point("011"), new Point("211"));
+
+            Globals.writeToFile = false;
+            //Tester.testPostShelling();
+            Tester.testNewSymmetry();
         }
 
 		public static void shelling()
 		{
-			List<Graph> tempResult, shellings, polytopes, uniquePolytopes, retractablePolytopes, finalPolytopes;
+			List<Graph> tempResult;
+       		List<Graph> allShelling = new List<Graph>();
 			List<Point> vertices = new List<Point>();
             List<Point> startPoints, endPoints;
 			List<Tuple<Point, Point>> allPoints = new List<Tuple<Point, Point>>();
@@ -51,9 +55,6 @@ namespace UpdatedRP
 					allPoints.Add(new Tuple<Point, Point>(p, q));
 			}
 			Console.WriteLine("Total u,v pairs: " + allPoints.Count);
-
-            List<Graph> allShelling = new List<Graph>();
-			int totalShellings = 0;
 
 			foreach (Tuple<Point, Point> item in allPoints)
 			{
@@ -80,55 +81,14 @@ namespace UpdatedRP
 								  + item.Item2.Coordinates[2] + "allShellings");
 
 				Console.WriteLine("Number of Convex Hulls checked: " + Globals.convexHullCount);
-
-				totalShellings += allShelling.Count;
-
-				Console.WriteLine(allShelling.Count);
 			}
-			Console.WriteLine("Total Shellings: " + totalShellings);
+			Console.WriteLine("Total Shellings: " + allShelling.Count);
 
 			if (Globals.writeToFile)
 				Parse.writeToFile(allShelling, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
 							  + Globals.gap.ToString() + "/_allShellings");
 
-			Shell.symmetryGroup(allShelling, out shellings);
-
-			Console.WriteLine("Unique Shellings: " + shellings.Count);
-
-			if (Globals.writeToFile)
-				Parse.writeToFile(shellings, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
-							  + Globals.gap.ToString() + "/_uniqueShellings");
-
-			polytopes = Shell.checkInterior(shellings);
-			Shell.symmetryGroup(polytopes, out uniquePolytopes);
-
-			Console.WriteLine("All valid polytopes: " + polytopes.Count);
-
-			if (Globals.writeToFile)
-				Parse.writeToFile(polytopes, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
-							  + Globals.gap.ToString() + "/_allPolytopes");
-
-			Console.WriteLine("Unique polytopes: " + uniquePolytopes.Count);
-
-			if (Globals.writeToFile)
-				Parse.writeToFile(polytopes, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
-							  + Globals.gap.ToString() + "/_uniquePolytopes");
-
-
-			retractablePolytopes = Shell.retractable(uniquePolytopes);
-			Shell.symmetryGroup(retractablePolytopes, out finalPolytopes);
-
-			Console.WriteLine("Retractable polytopes: " + uniquePolytopes.Count);
-
-			if (Globals.writeToFile)
-				Parse.writeToFile(polytopes, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
-							  + Globals.gap.ToString() + "/_retractablePolytopes");
-
-			Console.WriteLine("Final polytopes: " + uniquePolytopes.Count);
-
-			if (Globals.writeToFile)
-				Parse.writeToFile(polytopes, Globals.directory + Globals.d.ToString() + Globals.k.ToString()
-							  + Globals.gap.ToString() + "/_finalPolytopes");
+            PostShelling.postShellingProcess(allShelling);
 		}
 
         public static void shelling(Point u, Point v)
@@ -148,7 +108,7 @@ namespace UpdatedRP
 								  + u.Coordinates[2] + v.Coordinates[0] + v.Coordinates[1]
 								  + v.Coordinates[2] + "allShellings");
 
-			Shell.symmetryGroup(tempResult, out shellings);
+			shellings = Shell.symmetryGroup(tempResult);
 
 			Console.WriteLine("Unique Shellings: " + shellings.Count);
 
@@ -159,7 +119,7 @@ namespace UpdatedRP
 								  + v.Coordinates[2] + "_uniqueShellings");
 
 			polytopes = Shell.checkInterior(shellings);
-			Shell.symmetryGroup(polytopes, out uniquePolytopes);
+			uniquePolytopes = Shell.symmetryGroup(polytopes);
 
 			Console.WriteLine("All valid polytopes: " + polytopes.Count);
 
@@ -179,7 +139,7 @@ namespace UpdatedRP
 
 
 			retractablePolytopes = Shell.retractable(uniquePolytopes);
-			Shell.symmetryGroup(retractablePolytopes, out finalPolytopes);
+            finalPolytopes = Shell.symmetryGroup(retractablePolytopes);
 			Console.WriteLine("Retractable polytopes: " + uniquePolytopes.Count);
 
 			if (Globals.writeToFile)
