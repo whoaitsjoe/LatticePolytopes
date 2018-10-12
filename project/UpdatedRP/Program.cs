@@ -8,7 +8,6 @@ namespace UpdatedRP
     {
         public static void Main()
         {
-
             //execution parameters
             Globals.d = 3;
             Globals.k = 3;
