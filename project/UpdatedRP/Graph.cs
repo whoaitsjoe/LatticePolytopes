@@ -8,12 +8,12 @@ namespace UpdatedRP
     {
 		//Variables
 		//---------
-		List<Point> Points  //List of points in point format
+		public List<Point> Points  //List of points in point format
 		{
             get;
             set;
         }
-        Dictionary<string, List<string>> AdjList
+        public Dictionary<string, List<string>> AdjList
         {
             get;
             set;
@@ -103,7 +103,7 @@ namespace UpdatedRP
         }
 
         //adds input parameter to current graph
-        public void AddFacet(Graph g)
+        public void addFacet(Graph g)
         {
             bool found;
 

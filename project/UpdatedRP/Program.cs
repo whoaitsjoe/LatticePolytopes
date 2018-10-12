@@ -8,35 +8,51 @@ namespace UpdatedRP
     {
         public static void Main()
         {
-            //setting execution parameters
+
+            //execution parameters
             Globals.d = 3;
-			Globals.k = 3;
+            Globals.k = 3;
 			Globals.gap = 1;
-            //this should be read from file.
-			Globals.maxDiameter = new int[] { 0, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8 };
-            Globals.diameter = Globals.maxDiameter[Globals.k];
-            Globals.maxLength = Globals.diameter + Globals.k - Globals.gap; //delta(d-1,k)+k-gap, the number to be eliminated
-			Globals.chTime = 0;
-            Globals.messageOn = false;
+			Globals.messageOn = false;
+			Globals.writeToFile = false;
+            bool test = false;
+
             initialize();
 
-            /*var watch = System.Diagnostics.Stopwatch.StartNew();
-            shelling();
-			watch.Stop();
-
-			var elapsedMs = watch.ElapsedMilliseconds;
-            Console.WriteLine("Total elapsed time: " + elapsedMs);*/
-
-            //Tester.testGenUV();
-            //Tester.testInverse();
-            //Tester.testGeneratePolytopes();
-            //shelling();
-            //shelling(new Point("011"), new Point("211"));
-
-            Globals.writeToFile = false;
-            //Tester.testPostShelling();
-            Tester.testNewSymmetry();
+            if (test)
+                testMethod();
+            else
+                shelling();
         }
+
+		//initialize functions
+		public static void initialize()
+		{
+			//this should be read from file.
+			Globals.maxDiameter = new int[] { 0, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8 };
+
+			Globals.diameter = Globals.maxDiameter[Globals.k];
+			Globals.maxLength = Globals.diameter + Globals.k - Globals.gap; //delta(d-1,k)+k-gap, the number to be eliminated
+			Globals.chTime = 0;
+
+			Globals.initialize();
+
+			//read from file
+			Globals.vertexSet = initializeVertexSet();
+			Globals.nonvertexSet = initializeNonVertexSet();
+			Globals.coreSet = initializeCoreSet();
+			Globals._222polytopes = new Dictionary<string, List<Graph>>();
+
+			//todo -- temp method of generating all 222 polytopes
+			for (int i = 0; i < 9; i++)
+			{
+				Point p = new Point(new int[2] { i % 3, i / 3 });
+				List<Graph> polytopes = Generate.dMinus1Polytopes(new List<Point>() { p }, 2);
+				Globals._222polytopes.Add(p.ToString(), polytopes);
+			}
+
+			Console.WriteLine();
+		}
 
 		public static void shelling()
 		{
@@ -168,28 +184,6 @@ namespace UpdatedRP
 				Console.WriteLine(p);
 		}
 
-        //initialize functions
-        public static void initialize()
-        {
-            Globals.initialize();
-
-			//read from file
-			Globals.vertexSet = initializeVertexSet();
-            Globals.nonvertexSet = initializeNonVertexSet();
-			Globals.coreSet = initializeCoreSet();
-            Globals._222polytopes = new Dictionary<string, List<Graph>>();
-
-            //todo -- temp method of generating all 222 polytopes
-            for (int i = 0; i < 9; i++)
-            {
-                Point p = new Point(new int[2]{i%3, i/3});
-                List<Graph> polytopes = Generate.dMinus1Polytopes(new List<Point>() { p }, 2);
-                Globals._222polytopes.Add(p.ToString(), polytopes);
-            }
-
-            Console.WriteLine();
-        }
-
         public static Dictionary<string, List<Point>> initializeVertexSet()
         {
             Dictionary<string, List<Point>> result = new Dictionary<string, List<Point>>();
@@ -270,6 +264,15 @@ namespace UpdatedRP
                     return false;
             }
             return true;
+        }
+
+        public static void testMethod()
+        {
+            //Tester.testGenUV();
+            //Tester.testInverse();
+            //Tester.testGeneratePolytopes();
+            //Tester.testPostShelling();
+            //Tester.testNewSymmetry();
         }
 	}
 }

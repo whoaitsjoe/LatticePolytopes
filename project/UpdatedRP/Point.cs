@@ -8,7 +8,7 @@ namespace UpdatedRP
     {
 		//Variables
 		//---------
-        string Coordinates
+        public string Coordinates
         {
             get;
             set;
@@ -29,14 +29,12 @@ namespace UpdatedRP
             Coordinates = string.Join("",input);
         }
 
+		//Functions
+		//---------
 		public int getDimension()
 		{
 			return Coordinates.Length;
 		}
-
-
-        //Functions
-		//---------
         public override string ToString()
 		{
             return Coordinates;

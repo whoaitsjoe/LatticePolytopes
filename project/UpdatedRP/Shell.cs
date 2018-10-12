@@ -59,7 +59,8 @@ namespace UpdatedRP
             return shellHelper(subSkeleton, vertexSet, nonvertexSet, coreSet, facetsUsed, u, v, facetDiameter, initial_gi);
 		}
 
-        private static List<Graph> shellHelper(Graph currFacets, List<Point> vertexSet, List<Point> nonVertexSet, List<Point> coreSet, bool[] facetsUsed, Point u, Point v, int[] facetDiameter, int[] _gi)
+        private static List<Graph> shellHelper(Graph currFacets, List<Point> vertexSet, List<Point> nonVertexSet, 
+            List<Point> coreSet, bool[] facetsUsed, Point u, Point v, int[] facetDiameter, int[] _gi)
 		{
             if (Globals.messageOn)
                 Console.WriteLine("Number of added facets in shelling: " + facetsUsed.Where(c => c).Count());
@@ -125,7 +126,7 @@ namespace UpdatedRP
 					h.addDimensionality(nextFacet / 2, (nextFacet % 2 == 0) ? true : false);
 
 					//add facet to gamma
-					temp.AddFacet(h);
+					temp.addFacet(h);
 
 					//check 1 - looks for sp from u to v
 					sp = ShortestPath.BFS(temp, u, v);
